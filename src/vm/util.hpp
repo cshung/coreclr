@@ -1074,7 +1074,7 @@ struct JITNotification
 };
 
 // The maximum number of TADDR sized arguments that the SOS exception notification can use
-#define MAX_CLR_NOTIFICATION_ARGS 3
+#define MAX_CLR_NOTIFICATION_ARGS 4
 GARY_DECL(size_t, g_clrNotificationArguments, MAX_CLR_NOTIFICATION_ARGS);
 extern void InitializeClrNotifications();
 
@@ -1237,6 +1237,8 @@ public:
         EXCEPTION_NOTIFICATION=5,
         GC_NOTIFICATION= 6,
         CATCH_ENTER_NOTIFICATION = 7,
+        BEFORE_MOVE_NOTIFICATION = 8,
+        AFTER_MOVE_NOTIFICATION = 9,
     };
     
     // called from the runtime
@@ -1246,6 +1248,8 @@ public:
     static void DoModuleUnloadNotification(Module *Module);
     static void DoExceptionNotification(class Thread* ThreadPtr);
     static void DoGCNotification(const GcEvtArgs& evtargs);
+    static void DoBeforeMove(const uint8_t* sourceBegin, const uint8_t* sourceEnd, const uint8_t* destinationBegin);
+    static void DoAfterMove();
     static void DoExceptionCatcherEnterNotification(MethodDesc *MethodDescPtr, DWORD nativeOffset);
 
     // called from the DAC
@@ -1256,6 +1260,8 @@ public:
     static BOOL ParseModuleUnloadNotification(TADDR Args[], TADDR& ModulePtr);
     static BOOL ParseExceptionNotification(TADDR Args[], TADDR& ThreadPtr);
     static BOOL ParseGCNotification(TADDR Args[], GcEvtArgs& evtargs);
+    static BOOL ParseBeforeMoveNotification(TADDR Args[], TADDR& sourceBegin, TADDR& sourceEnd, TADDR& destinationBegin);
+    static BOOL ParseAfterMoveNotification(TADDR Args[]);
     static BOOL ParseExceptionCatcherEnterNotification(TADDR Args[], TADDR& MethodDescPtr, DWORD& nativeOffset);
 };
 

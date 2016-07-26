@@ -2536,3 +2536,14 @@ interface IXCLRDataExceptionNotification4 : IXCLRDataExceptionNotification3
      */
     HRESULT ExceptionCatcherEnter([in] IXCLRDataMethodInstance* catchingMethod, DWORD catcherNativeOffset);
 }
+
+[
+    object,
+    local,
+    uuid(697E91C1-0357-4241-962D-FF91880F84DC)
+]
+interface IXCLRDataExceptionNotification5 : IXCLRDataExceptionNotification4
+{
+    HRESULT OnBeforeMoveEvent([in] CLRDATA_ADDRESS sourceBegin, [in] CLRDATA_ADDRESS sourceEnd, [in] CLRDATA_ADDRESS destinationBegin);
+    HRESULT OnAfterMoveEvent();
+}

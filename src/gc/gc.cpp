@@ -24439,7 +24439,13 @@ void  gc_heap::gcmemcopy (uint8_t* dest, uint8_t* src, size_t len, BOOL copy_car
 #endif //BACKGROUND_GC
         //dprintf(3,(" Memcopy [%Ix->%Ix, %Ix->%Ix[", (size_t)src, (size_t)dest, (size_t)src+len, (size_t)dest+len));
         dprintf(3,(" mc: [%Ix->%Ix, %Ix->%Ix[", (size_t)src, (size_t)dest, (size_t)src+len, (size_t)dest+len));
+#ifndef GCSAMPLE
+        DACNotify::DoBeforeMove(src - plug_skew, src - plug_skew + len, dest - plug_skew);
+#endif
         memcopy (dest - plug_skew, src - plug_skew, (int)len);
+#ifndef GCSAMPLE
+        DACNotify::DoAfterMove();
+#endif
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         if (SoftwareWriteWatch::IsEnabledForGCHeap())
         {

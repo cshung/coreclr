@@ -4384,6 +4384,9 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
     GcEvtArgs pubGcEvtArgs;
     ULONG32 notifyType = 0;
     DWORD catcherNativeOffset = 0;
+    TADDR sourceBegin;
+    TADDR sourceEnd;
+    TADDR destinationBegin;
 
     DAC_ENTER();
 
@@ -4511,6 +4514,23 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
             }
             break;
         }
+        case DACNotify::BEFORE_MOVE_NOTIFICATION:
+        {
+            if (DACNotify::ParseBeforeMoveNotification(exInfo, sourceBegin, sourceEnd, destinationBegin))
+            {
+                status = S_OK;
+            }
+            break;
+        }
+
+        case DACNotify::AFTER_MOVE_NOTIFICATION:
+        {
+            if (DACNotify::ParseAfterMoveNotification(exInfo))
+            {
+                status = S_OK;
+            }
+            break;
+        }
 
         case DACNotify::CATCH_ENTER_NOTIFICATION:
         {
@@ -4589,6 +4609,13 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
             notify4 = NULL;
         }
 
+        IXCLRDataExceptionNotification5* notify5;
+        if (notify->QueryInterface(__uuidof(IXCLRDataExceptionNotification5),
+            (void**)&notify5) != S_OK)
+        {
+            notify5 = NULL;
+        }
+
         switch(notifyType)
         {
         case DACNotify::MODULE_LOAD_NOTIFICATION:
@@ -4618,6 +4645,18 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
             if (notify3)
             {
                 notify3->OnGcEvent(pubGcEvtArgs);
+            }
+            break;
+        case DACNotify::BEFORE_MOVE_NOTIFICATION:
+            if (notify5)
+            {
+                notify5->OnBeforeMoveEvent(sourceBegin, sourceEnd, destinationBegin);
+            }
+            break;
+        case DACNotify::AFTER_MOVE_NOTIFICATION:
+            if (notify5)
+            {
+                notify5->OnAfterMoveEvent();
             }
             break;
 
@@ -7533,7 +7572,7 @@ BOOL OutOfProcessExceptionEventGetProcessIdAndThreadId(HANDLE hProcess, HANDLE h
 #if !defined(FEATURE_CORESYSTEM)
     HMODULE hKernel32 = WszGetModuleHandle(W("kernel32.dll"));
 #else
-	HMODULE hKernel32 = WszGetModuleHandle(W("api-ms-win-core-processthreads-l1-1-1.dll"));
+    HMODULE hKernel32 = WszGetModuleHandle(W("api-ms-win-core-processthreads-l1-1-1.dll"));
 #endif
     if (hKernel32 == NULL)
     {
@@ -8671,3 +8710,4 @@ HRESULT DacStackReferenceErrorEnum::Next(unsigned int count, SOSStackRefError re
     *pFetched = i;
     return i < count ? S_FALSE : S_OK;
 }
+

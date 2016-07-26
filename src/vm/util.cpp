@@ -3462,6 +3462,34 @@ void DACNotify::DoGCNotification(const GcEvtArgs& args)
     }
 }
 
+void DACNotify::DoBeforeMove(const uint8_t* sourceBegin, const uint8_t* sourceEnd, const uint8_t* destinationBegin)
+{
+	CONTRACTL
+	{
+		NOTHROW;
+		GC_NOTRIGGER;
+		SO_INTOLERANT;
+		MODE_COOPERATIVE;
+	}
+	CONTRACTL_END;
+	TADDR Args[4] = { BEFORE_MOVE_NOTIFICATION, (TADDR)sourceBegin, (TADDR)sourceEnd, (TADDR)destinationBegin };
+	DACNotifyExceptionHelper(Args, 4);
+}
+
+void DACNotify::DoAfterMove()
+{
+	CONTRACTL
+	{
+		NOTHROW;
+	GC_NOTRIGGER;
+	SO_INTOLERANT;
+	MODE_COOPERATIVE;
+	}
+	CONTRACTL_END;
+	TADDR Args[1] = { AFTER_MOVE_NOTIFICATION };
+	DACNotifyExceptionHelper(Args, 1);
+}
+
 void DACNotify::DoExceptionCatcherEnterNotification(MethodDesc *MethodDescPtr, DWORD nativeOffset)
 {
     CONTRACTL
@@ -3587,6 +3615,31 @@ BOOL DACNotify::ParseGCNotification(TADDR Args[], GcEvtArgs& args)
     }
 
     return bRet;
+}
+
+BOOL DACNotify::ParseBeforeMoveNotification(TADDR Args[], TADDR& sourceBegin, TADDR& sourceEnd, TADDR& destinationBegin)
+{
+	_ASSERTE(Args[0] == BEFORE_MOVE_NOTIFICATION);
+	if (Args[0] != BEFORE_MOVE_NOTIFICATION)
+	{
+		return FALSE;
+	}
+
+	sourceBegin = Args[1];
+	sourceEnd = Args[2];
+	destinationBegin = Args[3];
+
+	return TRUE;
+}
+
+BOOL DACNotify::ParseAfterMoveNotification(TADDR Args[])
+{
+	_ASSERTE(Args[0] == AFTER_MOVE_NOTIFICATION);
+	if (Args[0] != AFTER_MOVE_NOTIFICATION)
+	{
+		return FALSE;
+	}
+	return TRUE;
 }
 
 BOOL DACNotify::ParseExceptionCatcherEnterNotification(TADDR Args[], TADDR& MethodDescPtr, DWORD& nativeOffset)

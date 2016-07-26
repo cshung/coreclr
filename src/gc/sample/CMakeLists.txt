@@ -2,6 +2,8 @@ project(clrgcsample)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+add_definitions(-DGCSAMPLE)
+
 include_directories(..)
 include_directories(../env)
 

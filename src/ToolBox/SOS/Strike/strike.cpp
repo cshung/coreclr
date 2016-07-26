@@ -128,6 +128,12 @@
 
 #include "tls.h"
 
+struct DataBreakpointNode
+{
+    TADDR m_address;
+    struct DataBreakpointNode* m_next;
+}*databreakpoints = nullptr;
+
 typedef struct _VM_COUNTERS {
     SIZE_T PeakVirtualSize;
     SIZE_T VirtualSize;
@@ -6672,10 +6678,30 @@ BOOL g_fAllowJitOptimization = TRUE;
 // execution is about to enter a catch clause
 BOOL g_stopOnNextCatch = FALSE;
 
+void EnableDataBreakpoint(TADDR address)
+{
+    char buffer[64];
+    sprintf_s(buffer, _countof(buffer), "ba w4 %p", (void*)address);
+
+    ExtOut("%s\r\n", buffer);
+
+    g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
+}
+
+void DisableDataBreakpoint(TADDR)
+{
+    char buffer[64];
+    sprintf_s(buffer, _countof(buffer), "bc *");
+
+    ExtOut("%s\r\n", buffer);
+
+    g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
+}
+
 // According to the latest debuggers these callbacks will not get called
 // unless the user (or an extension, like SOS :-)) had previously enabled
 // clrn with "sxe clrn".
-class CNotification : public IXCLRDataExceptionNotification4
+class CNotification : public IXCLRDataExceptionNotification5
 {
     static int s_condemnedGen;
 
@@ -6701,9 +6727,10 @@ public:
             || IsEqualIID(iid, IID_IXCLRDataExceptionNotification)
             || IsEqualIID(iid, IID_IXCLRDataExceptionNotification2)
             || IsEqualIID(iid, IID_IXCLRDataExceptionNotification3)
-            || IsEqualIID(iid, IID_IXCLRDataExceptionNotification4))
+            || IsEqualIID(iid, IID_IXCLRDataExceptionNotification4)
+            || IsEqualIID(iid, IID_IXCLRDataExceptionNotification5))
         {
-            *ppvObject = static_cast<IXCLRDataExceptionNotification4*>(this);
+            *ppvObject = static_cast<IXCLRDataExceptionNotification5*>(this);
             AddRef();
             return S_OK;
         }
@@ -6883,6 +6910,39 @@ public:
         return S_OK;
     }
 
+    STDMETHODIMP OnBeforeMoveEvent(
+        /* [in] */ CLRDATA_ADDRESS sourceBegin,
+        /* [in] */ CLRDATA_ADDRESS sourceEnd,
+        /* [in] */ CLRDATA_ADDRESS destinationBegin)
+    {
+        DataBreakpointNode* cur = databreakpoints;
+        while (cur != nullptr)
+        {
+            DisableDataBreakpoint(cur->m_address);
+            if (sourceBegin <= cur->m_address && cur->m_address < sourceEnd)
+            {
+                cur->m_address = cur->m_address - sourceBegin + destinationBegin;
+            }
+            cur = cur->m_next;
+        }
+
+        m_dbgStatus = DEBUG_STATUS_GO_HANDLED;
+        return S_OK;
+    }
+
+    STDMETHODIMP OnAfterMoveEvent()
+    {
+        DataBreakpointNode* cur = databreakpoints;
+        while (cur != nullptr)
+        {
+            EnableDataBreakpoint(cur->m_address);
+            cur = cur->m_next;
+        }
+
+        m_dbgStatus = DEBUG_STATUS_GO_HANDLED;
+        return S_OK;
+    }
+
     static int GetCondemnedGen()
     {
         return s_condemnedGen;
@@ -6895,7 +6955,7 @@ int CNotification::s_condemnedGen = -1;
 BOOL CheckCLRNotificationEvent(DEBUG_LAST_EVENT_INFO_EXCEPTION* pdle)
 {
     ISOSDacInterface4 *psos4 = NULL;
-    CLRDATA_ADDRESS arguments[3];
+    CLRDATA_ADDRESS arguments[4];
     HRESULT Status;
 
     if (SUCCEEDED(Status = g_sos->QueryInterface(__uuidof(ISOSDacInterface4), (void**) &psos4)))
@@ -14496,5 +14556,64 @@ DECLARE_API(Help)
         PrintHelp ("contents");
     }
     
+    return S_OK;
+}
+
+DECLARE_API(InsertDataBreakpoint)
+{
+    INIT_API();
+    MINIDUMP_NOT_SUPPORTED();
+
+    BOOL dml = FALSE;
+    BOOL bNoFields = FALSE;
+    BOOL bRefs = FALSE;
+    StringHolder str_Object;
+    CMDOption option[] =
+    {   // name, vptr, type, hasValue
+        { "-nofields", &bNoFields, COBOOL, FALSE },
+        { "-refs", &bRefs, COBOOL, FALSE },
+#ifndef FEATURE_PAL
+        { "/d", &dml, COBOOL, FALSE },
+#endif
+    };
+    CMDValue arg[] =
+    {   // vptr, type
+        { &str_Object.data, COSTRING }
+    };
+    size_t nArg;
+    if (!GetCMDOption(args, option, _countof(option), arg, _countof(arg), &nArg))
+    {
+        return Status;
+    }
+
+    DWORD_PTR p_Object = GetExpression(str_Object.data);
+    EnableDMLHolder dmlHolder(dml);
+
+    EnableDataBreakpoint(p_Object);
+
+    DataBreakpointNode* newBreakpoint = new (std::nothrow) DataBreakpointNode();
+    if (newBreakpoint == nullptr)
+    {
+        return E_OUTOFMEMORY;
+    }
+
+    newBreakpoint->m_address = p_Object;
+    newBreakpoint->m_next = databreakpoints;
+    databreakpoints = newBreakpoint;
+
+    return S_OK;
+}
+
+DECLARE_API(ListDataBreakpoint)
+{
+    INIT_API();
+    MINIDUMP_NOT_SUPPORTED();
+    DataBreakpointNode* cur = databreakpoints;
+    while (cur != nullptr)
+    {
+        ExtOut("%p\r\n", cur->m_address);
+        cur = cur->m_next;
+    }
+
     return S_OK;
 }
