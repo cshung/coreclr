@@ -2185,6 +2185,85 @@ EXTERN_C const IID IID_ISOSDacInterface4;
 
 #endif 	/* __ISOSDacInterface4_INTERFACE_DEFINED__ */
 
+#ifndef __ISOSDacInterface5_INTERFACE_DEFINED__
+#define __ISOSDacInterface5_INTERFACE_DEFINED__
+
+/* interface ISOSDacInterface5 */
+/* [uuid][local][object] */
+
+
+EXTERN_C const IID IID_ISOSDacInterface5;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+
+MIDL_INTERFACE("f529f56e-f7ff-4bd2-b485-8fe1dc1ab35d")
+ISOSDacInterface5 : public IUnknown
+{
+public:
+	virtual HRESULT STDMETHODCALLTYPE SetDataBreakpoint(
+		CLRDATA_ADDRESS address) = 0;
+
+};
+
+
+#else 	/* C style interface */
+
+typedef struct ISOSDacInterface5Vtbl
+{
+	BEGIN_INTERFACE
+
+		HRESULT(STDMETHODCALLTYPE *QueryInterface)(
+			ISOSDacInterface5 * This,
+			/* [in] */ REFIID riid,
+			/* [annotation][iid_is][out] */
+			_COM_Outptr_  void **ppvObject);
+
+	ULONG(STDMETHODCALLTYPE *AddRef)(
+		ISOSDacInterface5 * This);
+
+	ULONG(STDMETHODCALLTYPE *Release)(
+		ISOSDacInterface5 * This);
+
+	HRESULT(STDMETHODCALLTYPE *SetDataBreakpoint)(
+		ISOSDacInterface5 * This,
+		CLRDATA_ADDRESS address);
+
+	END_INTERFACE
+} ISOSDacInterface5Vtbl;
+
+interface ISOSDacInterface5
+{
+	CONST_VTBL struct ISOSDacInterface5Vtbl *lpVtbl;
+};
+
+
+
+#ifdef COBJMACROS
+
+
+#define ISOSDacInterface5_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ISOSDacInterface5_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ISOSDacInterface5_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ISOSDacInterface5_SetDataBreakpoint(This,address)	\
+    ( (This)->lpVtbl -> SetDataBreakpoint(This,address) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ISOSDacInterface5_INTERFACE_DEFINED__ */
+
 
 /* Additional Prototypes for ALL interfaces */
 

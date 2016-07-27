@@ -357,3 +357,13 @@ interface ISOSDacInterface4 : IUnknown
 {
     HRESULT GetClrNotification(CLRDATA_ADDRESS arguments[], int count, int *pNeeded);
 };
+
+[
+    object,
+    local,
+    uuid(f529f56e-f7ff-4bd2-b485-8fe1dc1ab35d)
+]
+interface ISOSDacInterface5 : IUnknown
+{
+    HRESULT SetDataBreakpoint(CLRDATA_ADDRESS address);
+}

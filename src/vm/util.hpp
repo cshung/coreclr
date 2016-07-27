@@ -1078,6 +1078,9 @@ struct JITNotification
 GARY_DECL(size_t, g_clrNotificationArguments, MAX_CLR_NOTIFICATION_ARGS);
 extern void InitializeClrNotifications();
 
+// The current data breakpoint address
+GVAL_DECL(size_t, g_dataBreakpoint);
+
 GPTR_DECL(JITNotification, g_pNotificationTable);
 GVAL_DECL(ULONG32, g_dacNotificationFlags);
 

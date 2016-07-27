@@ -2827,6 +2827,7 @@ VOID CLRFreeLibraryAndExitThread(HMODULE hModule,DWORD dwExitCode)
 
 GPTR_IMPL(JITNotification, g_pNotificationTable);
 GVAL_IMPL(ULONG32, g_dacNotificationFlags);
+GVAL_IMPL(size_t, g_dataBreakpoint);
 
 BOOL IsValidMethodCodeNotification(USHORT Notification)
 {

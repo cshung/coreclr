@@ -858,7 +858,8 @@ class ClrDataAccess
       public ISOSDacInterface,
       public ISOSDacInterface2,
       public ISOSDacInterface3,
-      public ISOSDacInterface4
+      public ISOSDacInterface4,
+      public ISOSDacInterface5
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1077,6 +1078,11 @@ public:
         /* [in] */ ULONG32 outBufferSize,
         /* [size_is][out] */ BYTE *outBuffer);
 
+	//
+	// ISOSDacInterface5
+	//
+	virtual HRESULT STDMETHODCALLTYPE SetDataBreakpoint(
+			/* [in] */ CLRDATA_ADDRESS address);
 
     //
     // IXCLRDataProcess2.

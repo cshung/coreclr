@@ -3274,6 +3274,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface4*>(this);
     }
+	else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface5)))
+	{
+		ifaceRet = static_cast<ISOSDacInterface5*>(this);
+	}
     else
     {
         *iface = NULL;
@@ -5126,6 +5130,32 @@ ClrDataAccess::SetOtherNotificationFlags(
 
     DAC_LEAVE();
     return status;
+}
+
+HRESULT
+ClrDataAccess::SetDataBreakpoint(
+	/* [in] */ CLRDATA_ADDRESS address)
+{
+	HRESULT status;
+
+	DAC_ENTER();
+
+	EX_TRY
+	{
+		g_dataBreakpoint = address;
+	status = S_OK;
+	}
+		EX_CATCH
+	{
+		if (!DacExceptionFilter(GET_EXCEPTION(), this, &status))
+		{
+			EX_RETHROW;
+		}
+	}
+		EX_END_CATCH(SwallowAllExceptions)
+
+		DAC_LEAVE();
+	return status;
 }
 
 enum

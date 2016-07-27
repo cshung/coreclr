@@ -6680,6 +6680,17 @@ BOOL g_stopOnNextCatch = FALSE;
 
 void EnableDataBreakpoint(TADDR address)
 {
+	HRESULT Status;
+	ISOSDacInterface5 *psos5 = NULL;
+	if (SUCCEEDED(Status = g_sos->QueryInterface(__uuidof(ISOSDacInterface5), (void**)&psos5)))
+	{
+		psos5->SetDataBreakpoint(address);
+	}
+	else
+	{
+		ExtOut("Sorry - something gone wrong with SetDataBreakpoint()");
+	}
+
     char buffer[64];
     sprintf_s(buffer, _countof(buffer), "ba w4 %p", (void*)address);
 
@@ -6690,6 +6701,17 @@ void EnableDataBreakpoint(TADDR address)
 
 void DisableDataBreakpoint(TADDR)
 {
+	HRESULT Status;
+	ISOSDacInterface5 *psos5 = NULL;
+	if (SUCCEEDED(Status = g_sos->QueryInterface(__uuidof(ISOSDacInterface5), (void**)&psos5)))
+	{
+		psos5->SetDataBreakpoint(0);
+	}
+	else
+	{
+		ExtOut("Sorry - something gone wrong with SetDataBreakpoint()");
+	}
+
     char buffer[64];
     sprintf_s(buffer, _countof(buffer), "bc *");
 
@@ -14589,7 +14611,8 @@ DECLARE_API(InsertDataBreakpoint)
     DWORD_PTR p_Object = GetExpression(str_Object.data);
     EnableDMLHolder dmlHolder(dml);
 
-    EnableDataBreakpoint(p_Object);
+	
+	EnableDataBreakpoint(p_Object);
 
     DataBreakpointNode* newBreakpoint = new (std::nothrow) DataBreakpointNode();
     if (newBreakpoint == nullptr)
