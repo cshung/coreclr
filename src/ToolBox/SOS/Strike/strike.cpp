@@ -131,6 +131,7 @@
 struct DataBreakpointNode
 {
     TADDR m_address;
+	size_t offset;
     struct DataBreakpointNode* m_next;
 }*databreakpoints = nullptr;
 
@@ -6678,13 +6679,13 @@ BOOL g_fAllowJitOptimization = TRUE;
 // execution is about to enter a catch clause
 BOOL g_stopOnNextCatch = FALSE;
 
-void EnableDataBreakpoint(TADDR address)
+void EnableDataBreakpoint(TADDR address, size_t offset)
 {
 	HRESULT Status;
 	ISOSDacInterface5 *psos5 = NULL;
 	if (SUCCEEDED(Status = g_sos->QueryInterface(__uuidof(ISOSDacInterface5), (void**)&psos5)))
 	{
-		psos5->SetDataBreakpoint(address);
+		psos5->SetDataBreakpoint(address, offset);
 	}
 	else
 	{
@@ -6692,20 +6693,20 @@ void EnableDataBreakpoint(TADDR address)
 	}
 
     char buffer[64];
-    sprintf_s(buffer, _countof(buffer), "ba w4 %p", (void*)address);
+    sprintf_s(buffer, _countof(buffer), "ba w4 %p", (void*)(address + offset));
 
     ExtOut("%s\r\n", buffer);
 
     g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
 }
 
-void DisableDataBreakpoint(TADDR)
+void DisableDataBreakpoint(TADDR, size_t)
 {
 	HRESULT Status;
 	ISOSDacInterface5 *psos5 = NULL;
 	if (SUCCEEDED(Status = g_sos->QueryInterface(__uuidof(ISOSDacInterface5), (void**)&psos5)))
 	{
-		psos5->SetDataBreakpoint(0);
+		psos5->SetDataBreakpoint(0, 0);
 	}
 	else
 	{
@@ -6940,8 +6941,9 @@ public:
         DataBreakpointNode* cur = databreakpoints;
         while (cur != nullptr)
         {
-            DisableDataBreakpoint(cur->m_address);
-            if (sourceBegin <= cur->m_address && cur->m_address < sourceEnd)
+            DisableDataBreakpoint(cur->m_address, cur->offset);
+			CLRDATA_ADDRESS breakpointAddr = cur->m_address + cur->offset;
+            if (sourceBegin <= breakpointAddr && breakpointAddr< sourceEnd)
             {
                 cur->m_address = cur->m_address - sourceBegin + destinationBegin;
             }
@@ -6957,14 +6959,14 @@ public:
         DataBreakpointNode* cur = databreakpoints;
         while (cur != nullptr)
         {
-            EnableDataBreakpoint(cur->m_address);
+            EnableDataBreakpoint(cur->m_address, cur->offset);
             cur = cur->m_next;
         }
 
         m_dbgStatus = DEBUG_STATUS_GO_HANDLED;
         return S_OK;
     }
-
+	
     static int GetCondemnedGen()
     {
         return s_condemnedGen;
@@ -14589,7 +14591,8 @@ DECLARE_API(InsertDataBreakpoint)
     BOOL dml = FALSE;
     BOOL bNoFields = FALSE;
     BOOL bRefs = FALSE;
-    StringHolder str_Object;
+    StringHolder str_Object1;
+	StringHolder str_Object2;
     CMDOption option[] =
     {   // name, vptr, type, hasValue
         { "-nofields", &bNoFields, COBOOL, FALSE },
@@ -14600,7 +14603,8 @@ DECLARE_API(InsertDataBreakpoint)
     };
     CMDValue arg[] =
     {   // vptr, type
-        { &str_Object.data, COSTRING }
+        { &str_Object1.data, COSTRING },
+		{ &str_Object2.data, COSTRING }
     };
     size_t nArg;
     if (!GetCMDOption(args, option, _countof(option), arg, _countof(arg), &nArg))
@@ -14608,11 +14612,12 @@ DECLARE_API(InsertDataBreakpoint)
         return Status;
     }
 
-    DWORD_PTR p_Object = GetExpression(str_Object.data);
+    DWORD_PTR p_Object = GetExpression(str_Object1.data);
+	size_t fieldOffset = GetExpression(str_Object2.data);
     EnableDMLHolder dmlHolder(dml);
 
 	
-	EnableDataBreakpoint(p_Object);
+	EnableDataBreakpoint(p_Object, fieldOffset);
 
     DataBreakpointNode* newBreakpoint = new (std::nothrow) DataBreakpointNode();
     if (newBreakpoint == nullptr)
@@ -14621,6 +14626,7 @@ DECLARE_API(InsertDataBreakpoint)
     }
 
     newBreakpoint->m_address = p_Object;
+	newBreakpoint->offset = fieldOffset;
     newBreakpoint->m_next = databreakpoints;
     databreakpoints = newBreakpoint;
 

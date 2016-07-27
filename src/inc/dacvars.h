@@ -181,6 +181,8 @@ DEFINE_DACVAR(ULONG, ULONG32, dac__g_dacNotificationFlags, ::g_dacNotificationFl
 DEFINE_DACVAR(ULONG, PTR_GcNotification, dac__g_pGcNotificationTable, ::g_pGcNotificationTable)
 
 DEFINE_DACVAR(ULONG, SIZE_T, dac__g_dataBreakpoint, ::g_dataBreakpoint)
+DEFINE_DACVAR(ULONG, SIZE_T, dac__g_dataBreakpoint_object, ::g_dataBreakpoint_object)
+DEFINE_DACVAR(ULONG, SIZE_T, dac__g_dataBreakpoint_object_offset, ::g_dataBreakpoint_object_offset)
 
 #ifndef FEATURE_IMPLICIT_TLS
 DEFINE_DACVAR(ULONG, DWORD, dac__gThreadTLSIndex, ::gThreadTLSIndex)

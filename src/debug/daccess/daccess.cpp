@@ -5134,7 +5134,8 @@ ClrDataAccess::SetOtherNotificationFlags(
 
 HRESULT
 ClrDataAccess::SetDataBreakpoint(
-	/* [in] */ CLRDATA_ADDRESS address)
+	/* [in] */ CLRDATA_ADDRESS address,
+	/* [in] */ size_t offset)
 {
 	HRESULT status;
 
@@ -5142,8 +5143,10 @@ ClrDataAccess::SetDataBreakpoint(
 
 	EX_TRY
 	{
-		g_dataBreakpoint = address;
-	status = S_OK;
+		g_dataBreakpoint = address + offset;
+		g_dataBreakpoint_object = address;
+		g_dataBreakpoint_object_offset = offset;
+		status = S_OK;
 	}
 		EX_CATCH
 	{

@@ -1080,6 +1080,8 @@ extern void InitializeClrNotifications();
 
 // The current data breakpoint address
 GVAL_DECL(size_t, g_dataBreakpoint);
+GVAL_DECL(size_t, g_dataBreakpoint_object);
+GVAL_DECL(size_t, g_dataBreakpoint_object_offset);
 
 GPTR_DECL(JITNotification, g_pNotificationTable);
 GVAL_DECL(ULONG32, g_dacNotificationFlags);
@@ -1232,16 +1234,16 @@ class DACNotify
 {
 public:
     // types
-    enum {
-        MODULE_LOAD_NOTIFICATION=1,
-        MODULE_UNLOAD_NOTIFICATION=2,
-        JIT_NOTIFICATION=3,
-        JIT_DISCARD_NOTIFICATION=4,
-        EXCEPTION_NOTIFICATION=5,
-        GC_NOTIFICATION= 6,
-        CATCH_ENTER_NOTIFICATION = 7,
-        BEFORE_MOVE_NOTIFICATION = 8,
-        AFTER_MOVE_NOTIFICATION = 9,
+	enum {
+		MODULE_LOAD_NOTIFICATION = 1,
+		MODULE_UNLOAD_NOTIFICATION = 2,
+		JIT_NOTIFICATION = 3,
+		JIT_DISCARD_NOTIFICATION = 4,
+		EXCEPTION_NOTIFICATION = 5,
+		GC_NOTIFICATION = 6,
+		CATCH_ENTER_NOTIFICATION = 7,
+		BEFORE_MOVE_NOTIFICATION = 8,
+		AFTER_MOVE_NOTIFICATION = 9,
     };
     
     // called from the runtime

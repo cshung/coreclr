@@ -2828,6 +2828,8 @@ VOID CLRFreeLibraryAndExitThread(HMODULE hModule,DWORD dwExitCode)
 GPTR_IMPL(JITNotification, g_pNotificationTable);
 GVAL_IMPL(ULONG32, g_dacNotificationFlags);
 GVAL_IMPL(size_t, g_dataBreakpoint);
+GVAL_IMPL(size_t, g_dataBreakpoint_object);
+GVAL_IMPL(size_t, g_dataBreakpoint_object_offset);
 
 BOOL IsValidMethodCodeNotification(USHORT Notification)
 {
@@ -3482,9 +3484,9 @@ void DACNotify::DoAfterMove()
 	CONTRACTL
 	{
 		NOTHROW;
-	GC_NOTRIGGER;
-	SO_INTOLERANT;
-	MODE_COOPERATIVE;
+		GC_NOTRIGGER;
+		SO_INTOLERANT;
+		MODE_COOPERATIVE;
 	}
 	CONTRACTL_END;
 	TADDR Args[1] = { AFTER_MOVE_NOTIFICATION };
