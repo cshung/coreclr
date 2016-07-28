@@ -6693,7 +6693,7 @@ void EnableDataBreakpoint(TADDR address, size_t offset)
 	}
 
     char buffer[64];
-    sprintf_s(buffer, _countof(buffer), "ba w4 %p", (void*)(address + offset));
+    sprintf_s(buffer, _countof(buffer), "ba w4 %p \"!CheckDataBreakpointsAlive\"", (void*)(address + offset));
 
     ExtOut("%s\r\n", buffer);
 
@@ -14614,6 +14614,8 @@ DECLARE_API(InsertDataBreakpoint)
 
     DWORD_PTR p_Object = GetExpression(str_Object1.data);
 	size_t fieldOffset = GetExpression(str_Object2.data);
+	if (fieldOffset == 0)
+		ExtOut("Please set field offset bigger than 0 \n");
     EnableDMLHolder dmlHolder(dml);
 
 	
@@ -14645,4 +14647,25 @@ DECLARE_API(ListDataBreakpoint)
     }
 
     return S_OK;
+}
+
+
+DECLARE_API(CheckDataBreakpointsAlive)
+{
+	INIT_API();
+	MINIDUMP_NOT_SUPPORTED();
+
+	DataBreakpointNode* cur = databreakpoints;
+	while (cur != nullptr)
+	{
+		TADDR taObj = cur->m_address;
+		if (!sos::IsObject(taObj, true))
+		{
+			ExtOut("<Note: this object is no longer valid. Disable the data breakpoint for object:%p>\n", taObj);
+			DisableDataBreakpoint(cur->m_address, cur->offset);
+		}
+		cur = cur->m_next;
+	}
+
+	return S_OK;
 }
