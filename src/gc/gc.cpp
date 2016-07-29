@@ -24440,19 +24440,23 @@ void  gc_heap::gcmemcopy (uint8_t* dest, uint8_t* src, size_t len, BOOL copy_car
         //dprintf(3,(" Memcopy [%Ix->%Ix, %Ix->%Ix[", (size_t)src, (size_t)dest, (size_t)src+len, (size_t)dest+len));
         dprintf(3,(" mc: [%Ix->%Ix, %Ix->%Ix[", (size_t)src, (size_t)dest, (size_t)src+len, (size_t)dest+len));
 #ifndef GCSAMPLE
+		/*
 		bool containsDataBreakpoint = (src - plug_skew) <= (uint8_t *)g_dataBreakpoint && (uint8_t *)g_dataBreakpoint < (src - plug_skew + len);
 		if (containsDataBreakpoint)
 		{
 			DACNotify::DoBeforeMove(src - plug_skew, src - plug_skew + len, dest - plug_skew);
 		}
+		*/
 #endif
         memcopy (dest - plug_skew, src - plug_skew, (int)len);
+		/*
 #ifndef GCSAMPLE
 		if (containsDataBreakpoint)
 		{
 			DACNotify::DoAfterMove();
 		}
 #endif
+*/
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         if (SoftwareWriteWatch::IsEnabledForGCHeap())
         {
@@ -34884,13 +34888,61 @@ BOOL should_collect_optimized (dynamic_data* dd, BOOL low_memory_p)
     return FALSE;
 }
 
+#ifndef GCSAMPLE
+WeakReferenceObject* dbWeakReferenceObj = NULL;
+WEAKREFERENCEREF dbObjWeakReference;
+static FORCEINLINE OBJECTREF GetWeakReferenceTarget(WEAKREFERENCEREF pThis);
+#endif
+
+
+HRESULT
+GCHeap::GarbageCollect(int generation, BOOL low_memory_p, int mode)
+{
+#ifndef GCSAMPLE
+	if (dbWeakReferenceObj == NULL)
+	{
+		dbWeakReferenceObj = new WeakReferenceObject();
+		dbObjWeakReference = WEAKREFERENCEREF(dbWeakReferenceObj);
+		OBJECTREF pTarget = OBJECTREF((Object *)g_dataBreakpoint_object);
+		dbObjWeakReference->m_Handle = GetAppDomain()->CreateTypedHandle(pTarget, HNDTYPE_WEAK_SHORT);
+	}
+	
+	OBJECTHANDLE rawHandle = dbObjWeakReference->m_Handle.LoadWithoutBarrier();
+/*
+	Object * pobj = WeakReferenceNative::GetTarget(dbWeakReferenceObj);
+	*/
+	
+	GetWeakReferenceTarget(dbObjWeakReference);
+#endif
+	HRESULT hr = GarbageCollectHelper(generation, low_memory_p, mode);
+
+#ifndef GCSAMPLE
+	/*
+	rawHandle = dbObjWeakReference->m_Handle.LoadWithoutBarrier();
+	handle = GetHandleValue(rawHandle);
+	OBJECTREF dbObjRefNew = OBJECTREF(*(Object **)(dbObjWeakReference->m_Handle));
+	if (*dbObjRefNew != NULL)
+	{
+		TADDR dbObjNewAddr = *(((Object **))dbObjRefNew)->GetAddress();
+		if (dbObjNewAddr != dbObjOldAddr)
+		{
+			return hr;
+		}
+	}
+	*/
+#endif
+
+	return hr;
+}
+
+
 //----------------------------------------------------------------------------
 // #GarbageCollector
 //
 //  API to ensure that a complete new garbage collection takes place
 //
 HRESULT
-GCHeap::GarbageCollect (int generation, BOOL low_memory_p, int mode)
+GCHeap::GarbageCollectHelper (int generation, BOOL low_memory_p, int mode)
 {
 #if defined(BIT64) 
     if (low_memory_p)

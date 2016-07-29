@@ -140,6 +140,7 @@ public:
     BOOL IsObjectInFixedHeap(Object *pObj);
 
     HRESULT GarbageCollect (int generation = -1, BOOL low_memory_p=FALSE, int mode=collection_blocking);
+	HRESULT GarbageCollectHelper(int generation = -1, BOOL low_memory_p = FALSE, int mode = collection_blocking);
 
     ////
     // GC callback functions
