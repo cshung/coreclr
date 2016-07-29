@@ -6693,8 +6693,8 @@ void EnableDataBreakpoint(TADDR address, size_t offset)
 	}
 
     char buffer[64];
-    sprintf_s(buffer, _countof(buffer), "ba w4 %p \"!CheckDataBreakpointsAlive\"", (void*)(address + offset));
-
+    // sprintf_s(buffer, _countof(buffer), "ba w4 %p \"!CheckDataBreakpointsAlive\"", (void*)(address + offset));
+	sprintf_s(buffer, _countof(buffer), "ba w4 %p", (void*)(address + offset));
     ExtOut("%s\r\n", buffer);
 
     g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
@@ -6703,7 +6703,7 @@ void EnableDataBreakpoint(TADDR address, size_t offset)
 void DisableDataBreakpoint(TADDR, size_t)
 {
 	HRESULT Status;
-	ISOSDacInterface5 *psos5 = NULL;
+	/*ISOSDacInterface5 *psos5 = NULL;
 	if (SUCCEEDED(Status = g_sos->QueryInterface(__uuidof(ISOSDacInterface5), (void**)&psos5)))
 	{
 		psos5->SetDataBreakpoint(0, 0);
@@ -6711,14 +6711,12 @@ void DisableDataBreakpoint(TADDR, size_t)
 	else
 	{
 		ExtOut("Sorry - something gone wrong with SetDataBreakpoint()");
-	}
+	}*/
 
     char buffer[64];
     sprintf_s(buffer, _countof(buffer), "bc *");
-
     ExtOut("%s\r\n", buffer);
-
-    g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
+    // g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
 }
 
 // According to the latest debuggers these callbacks will not get called
@@ -6941,12 +6939,11 @@ public:
         DataBreakpointNode* cur = databreakpoints;
         while (cur != nullptr)
         {
-            DisableDataBreakpoint(cur->m_address, cur->offset);
-			CLRDATA_ADDRESS breakpointAddr = cur->m_address + cur->offset;
-            if (sourceBegin <= breakpointAddr && breakpointAddr< sourceEnd)
+            if (cur->m_address == sourceBegin)
             {
-                cur->m_address = cur->m_address - sourceBegin + destinationBegin;
+				cur->m_address = sourceEnd;
             }
+			EnableDataBreakpoint(cur->m_address, cur->offset);
             cur = cur->m_next;
         }
 
@@ -6959,7 +6956,7 @@ public:
         DataBreakpointNode* cur = databreakpoints;
         while (cur != nullptr)
         {
-            EnableDataBreakpoint(cur->m_address, cur->offset);
+            DisableDataBreakpoint(cur->m_address, cur->offset);
             cur = cur->m_next;
         }
 
@@ -14618,6 +14615,9 @@ DECLARE_API(InsertDataBreakpoint)
 		ExtOut("Please set field offset bigger than 0 \n");
     EnableDMLHolder dmlHolder(dml);
 
+	char buffer[64];
+	sprintf_s(buffer, _countof(buffer), "sxe -c \"!HandleCLRN\" clrn");
+	Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
 	
 	EnableDataBreakpoint(p_Object, fieldOffset);
 
