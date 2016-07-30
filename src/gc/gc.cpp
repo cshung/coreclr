@@ -34889,7 +34889,7 @@ GCHeap::GarbageCollect(int generation, BOOL low_memory_p, int mode)
 	}
 	if (g_dataBreakpoint_handle != nullptr)
 	{
-		DACNotify::DoAfterMove();
+		DACNotify::SuspendDataBreakpoint();
 	}
 #endif
 	HRESULT hr = GarbageCollectHelper(generation, low_memory_p, mode);
@@ -34898,7 +34898,7 @@ GCHeap::GarbageCollect(int generation, BOOL low_memory_p, int mode)
 	if (g_dataBreakpoint_handle != nullptr)
 	{
 		Object* newAddress = *g_dataBreakpoint_handle;
-		DACNotify::DoBeforeMove((uint8_t*)g_dataBreakpoint_object, (uint8_t*)newAddress, (uint8_t*)0);
+		DACNotify::ResumeDataBreakpoint((uint8_t*)g_dataBreakpoint_object, (uint8_t*)newAddress);
 		if (newAddress != (Object*)g_dataBreakpoint_object)
 		{
 			g_dataBreakpoint_object = (size_t)newAddress;

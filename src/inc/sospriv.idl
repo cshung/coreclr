@@ -365,5 +365,5 @@ interface ISOSDacInterface4 : IUnknown
 ]
 interface ISOSDacInterface5 : IUnknown
 {
-    HRESULT SetDataBreakpoint(CLRDATA_ADDRESS address, size_t offset);
+    HRESULT SetDataBreakpoint(CLRDATA_ADDRESS dataBreakpointObjAddr);
 }

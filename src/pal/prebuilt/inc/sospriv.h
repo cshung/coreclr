@@ -2201,8 +2201,7 @@ EXTERN_C const IID IID_ISOSDacInterface4;
 	{
 	public:
 		virtual HRESULT STDMETHODCALLTYPE SetDataBreakpoint(
-			CLRDATA_ADDRESS address,
-			size_t offset) = 0;
+			CLRDATA_ADDRESS dataBreakpointObjAddr) = 0;
 
 	};
 
@@ -2227,8 +2226,7 @@ EXTERN_C const IID IID_ISOSDacInterface4;
 
 		HRESULT(STDMETHODCALLTYPE *SetDataBreakpoint)(
 			ISOSDacInterface5 * This,
-			CLRDATA_ADDRESS address,
-			size_t offset);
+			CLRDATA_ADDRESS dataBreakpointObjAddr);
 
 		END_INTERFACE
 	} ISOSDacInterface5Vtbl;
@@ -2253,8 +2251,8 @@ EXTERN_C const IID IID_ISOSDacInterface4;
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ISOSDacInterface5_SetDataBreakpoint(This,address,offset)	\
-    ( (This)->lpVtbl -> SetDataBreakpoint(This,address,offset) ) 
+#define ISOSDacInterface5_SetDataBreakpoint(This,dataBreakpointObjAddr)	\
+    ( (This)->lpVtbl -> SetDataBreakpoint(This,dataBreakpointObjAddr) ) 
 
 #endif /* COBJMACROS */
 
@@ -2276,5 +2274,3 @@ EXTERN_C const IID IID_ISOSDacInterface4;
 #endif
 
 #endif
-
-

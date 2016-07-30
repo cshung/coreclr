@@ -7736,12 +7736,11 @@ EXTERN_C const IID IID_IXCLRDataExceptionNotification4;
 		IXCLRDataExceptionNotification5 : public IXCLRDataExceptionNotification4
 	{
 	public:
-		virtual HRESULT STDMETHODCALLTYPE OnBeforeMoveEvent(
-			/* [in] */ CLRDATA_ADDRESS sourceBegin,
-			/* [in] */ CLRDATA_ADDRESS sourceEnd,
-			/* [in] */ CLRDATA_ADDRESS destinationBegin) = 0;
+		virtual HRESULT STDMETHODCALLTYPE ResumeDataBreakpointEvent(
+			/* [in] */ CLRDATA_ADDRESS oldDataBreakpointObjAddr,
+			/* [in] */ CLRDATA_ADDRESS newDataBreakpointObjAddr) = 0;
 
-		virtual HRESULT STDMETHODCALLTYPE OnAfterMoveEvent(void) = 0;
+		virtual HRESULT STDMETHODCALLTYPE SuspendDataBreakpointEvent(void) = 0;
 
 	};
 
@@ -7818,13 +7817,12 @@ EXTERN_C const IID IID_IXCLRDataExceptionNotification4;
 			/* [in] */ IXCLRDataMethodInstance *catchingMethod,
 			DWORD catcherNativeOffset);
 
-		HRESULT(STDMETHODCALLTYPE *OnBeforeMoveEvent)(
+		HRESULT(STDMETHODCALLTYPE *ResumeDataBreakpointEvent)(
 			IXCLRDataExceptionNotification5 * This,
-			/* [in] */ CLRDATA_ADDRESS sourceBegin,
-			/* [in] */ CLRDATA_ADDRESS sourceEnd,
-			/* [in] */ CLRDATA_ADDRESS destinationBegin);
+			/* [in] */ CLRDATA_ADDRESS oldDataBreakpointObjAddr,
+			/* [in] */ CLRDATA_ADDRESS newDataBreakpointObjAddr);
 
-		HRESULT(STDMETHODCALLTYPE *OnAfterMoveEvent)(
+		HRESULT(STDMETHODCALLTYPE *SuspendDataBreakpointEvent)(
 			IXCLRDataExceptionNotification5 * This);
 
 		END_INTERFACE
@@ -7893,11 +7891,11 @@ EXTERN_C const IID IID_IXCLRDataExceptionNotification4;
     ( (This)->lpVtbl -> ExceptionCatcherEnter(This,catchingMethod,catcherNativeOffset) ) 
 
 
-#define IXCLRDataExceptionNotification5_OnBeforeMoveEvent(This,sourceBegin,sourceEnd,destinationBegin)	\
-    ( (This)->lpVtbl -> OnBeforeMoveEvent(This,sourceBegin,sourceEnd,destinationBegin) ) 
+#define IXCLRDataExceptionNotification5_ResumeDataBreakpointEvent(This,oldDataBreakpointObjAddr,newDataBreakpointObjAddr)	\
+    ( (This)->lpVtbl -> ResumeDataBreakpointEvent(This,oldDataBreakpointObjAddr,newDataBreakpointObjAddr) ) 
 
-#define IXCLRDataExceptionNotification5_OnAfterMoveEvent(This)	\
-    ( (This)->lpVtbl -> OnAfterMoveEvent(This) ) 
+#define IXCLRDataExceptionNotification5_SuspendDataBreakpointEvent(This)	\
+    ( (This)->lpVtbl -> SuspendDataBreakpointEvent(This) ) 
 
 #endif /* COBJMACROS */
 
@@ -7909,9 +7907,10 @@ EXTERN_C const IID IID_IXCLRDataExceptionNotification4;
 
 #endif 	/* __IXCLRDataExceptionNotification5_INTERFACE_DEFINED__ */
 
-/* Additional Prototypes for ALL interfaces */
 
-/* end of Additional Prototypes */
+	/* Additional Prototypes for ALL interfaces */
+
+	/* end of Additional Prototypes */
 
 #ifdef __cplusplus
 }

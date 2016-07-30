@@ -1082,8 +1082,7 @@ public:
 	// ISOSDacInterface5
 	//
 	virtual HRESULT STDMETHODCALLTYPE SetDataBreakpoint(
-			/* [in] */ CLRDATA_ADDRESS address,
-		    /* [in] */ size_t offset);
+			/* [in] */ CLRDATA_ADDRESS address);
 
     //
     // IXCLRDataProcess2.

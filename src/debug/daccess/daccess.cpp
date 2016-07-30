@@ -4388,8 +4388,8 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
     GcEvtArgs pubGcEvtArgs;
     ULONG32 notifyType = 0;
     DWORD catcherNativeOffset = 0;
-    TADDR sourceBegin;
-    TADDR sourceEnd;
+    TADDR oldDataBreakpointObjAddr;
+    TADDR newDataBreakpointObjAddr;
     TADDR destinationBegin;
 
     DAC_ENTER();
@@ -4518,18 +4518,18 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
             }
             break;
         }
-        case DACNotify::BEFORE_MOVE_NOTIFICATION:
+        case DACNotify::RESUME_DATABREAKPOINT_NOTIFICATION:
         {
-            if (DACNotify::ParseBeforeMoveNotification(exInfo, sourceBegin, sourceEnd, destinationBegin))
+            if (DACNotify::ParseResumeDataBreakpointNotification(exInfo, oldDataBreakpointObjAddr, newDataBreakpointObjAddr))
             {
                 status = S_OK;
             }
             break;
         }
 
-        case DACNotify::AFTER_MOVE_NOTIFICATION:
+        case DACNotify::SUSPEND_DATABREAKPOINT_NOTIFICATION:
         {
-            if (DACNotify::ParseAfterMoveNotification(exInfo))
+            if (DACNotify::ParseSuspendDataBreakpointNotification(exInfo))
             {
                 status = S_OK;
             }
@@ -4651,16 +4651,16 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
                 notify3->OnGcEvent(pubGcEvtArgs);
             }
             break;
-        case DACNotify::BEFORE_MOVE_NOTIFICATION:
+        case DACNotify::RESUME_DATABREAKPOINT_NOTIFICATION:
             if (notify5)
             {
-                notify5->OnBeforeMoveEvent(sourceBegin, sourceEnd, destinationBegin);
+                notify5->ResumeDataBreakpointEvent(oldDataBreakpointObjAddr, newDataBreakpointObjAddr);
             }
             break;
-        case DACNotify::AFTER_MOVE_NOTIFICATION:
+        case DACNotify::SUSPEND_DATABREAKPOINT_NOTIFICATION:
             if (notify5)
             {
-                notify5->OnAfterMoveEvent();
+                notify5->SuspendDataBreakpointEvent();
             }
             break;
 
@@ -5134,8 +5134,7 @@ ClrDataAccess::SetOtherNotificationFlags(
 
 HRESULT
 ClrDataAccess::SetDataBreakpoint(
-	/* [in] */ CLRDATA_ADDRESS address,
-	/* [in] */ size_t offset)
+	/* [in] */ CLRDATA_ADDRESS dataBreakpointObjAddr)
 {
 	HRESULT status;
 
@@ -5143,9 +5142,7 @@ ClrDataAccess::SetDataBreakpoint(
 
 	EX_TRY
 	{
-		g_dataBreakpoint = address + offset;
-		g_dataBreakpoint_object = address;
-		g_dataBreakpoint_object_offset = offset;
+		g_dataBreakpoint_object = dataBreakpointObjAddr;
 		status = S_OK;
 	}
 		EX_CATCH

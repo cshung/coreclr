@@ -6679,13 +6679,13 @@ BOOL g_fAllowJitOptimization = TRUE;
 // execution is about to enter a catch clause
 BOOL g_stopOnNextCatch = FALSE;
 
-void EnableDataBreakpoint(TADDR address, size_t offset)
+void EnableDataBreakpoint(TADDR dataBreakpointObjAddr, size_t offset)
 {
 	HRESULT Status;
 	ISOSDacInterface5 *psos5 = NULL;
 	if (SUCCEEDED(Status = g_sos->QueryInterface(__uuidof(ISOSDacInterface5), (void**)&psos5)))
 	{
-		psos5->SetDataBreakpoint(address, offset);
+		psos5->SetDataBreakpoint(dataBreakpointObjAddr);
 	}
 	else
 	{
@@ -6694,7 +6694,7 @@ void EnableDataBreakpoint(TADDR address, size_t offset)
 
     char buffer[64];
     // sprintf_s(buffer, _countof(buffer), "ba w4 %p \"!CheckDataBreakpointsAlive\"", (void*)(address + offset));
-	sprintf_s(buffer, _countof(buffer), "ba w4 %p", (void*)(address + offset));
+	sprintf_s(buffer, _countof(buffer), "ba w4 %p", (void*)(dataBreakpointObjAddr + offset));
     ExtOut("%s\r\n", buffer);
 
     g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
@@ -6931,17 +6931,16 @@ public:
         return S_OK;
     }
 
-    STDMETHODIMP OnBeforeMoveEvent(
-        /* [in] */ CLRDATA_ADDRESS sourceBegin,
-        /* [in] */ CLRDATA_ADDRESS sourceEnd,
-        /* [in] */ CLRDATA_ADDRESS destinationBegin)
+    STDMETHODIMP ResumeDataBreakpointEvent(
+        /* [in] */ CLRDATA_ADDRESS oldDataBreakpointObjAddr,
+        /* [in] */ CLRDATA_ADDRESS newDataBreakpointObjAddr)
     {
         DataBreakpointNode* cur = databreakpoints;
         while (cur != nullptr)
         {
-            if (cur->m_address == sourceBegin)
+            if (cur->m_address == oldDataBreakpointObjAddr)
             {
-				cur->m_address = sourceEnd;
+				cur->m_address = newDataBreakpointObjAddr;
             }
 			EnableDataBreakpoint(cur->m_address, cur->offset);
             cur = cur->m_next;
@@ -6951,7 +6950,7 @@ public:
         return S_OK;
     }
 
-    STDMETHODIMP OnAfterMoveEvent()
+    STDMETHODIMP SuspendDataBreakpointEvent()
     {
         DataBreakpointNode* cur = databreakpoints;
         while (cur != nullptr)

@@ -2544,6 +2544,6 @@ interface IXCLRDataExceptionNotification4 : IXCLRDataExceptionNotification3
 ]
 interface IXCLRDataExceptionNotification5 : IXCLRDataExceptionNotification4
 {
-    HRESULT OnBeforeMoveEvent([in] CLRDATA_ADDRESS sourceBegin, [in] CLRDATA_ADDRESS sourceEnd, [in] CLRDATA_ADDRESS destinationBegin);
-    HRESULT OnAfterMoveEvent();
+    HRESULT ResumeDataBreakpointEvent([in] CLRDATA_ADDRESS oldDataBreakpointObjAddr, [in] CLRDATA_ADDRESS newDataBreakpointObjAddr);
+    HRESULT SuspendDataBreakpointEvent();
 }

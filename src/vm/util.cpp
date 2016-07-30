@@ -2828,9 +2828,7 @@ VOID CLRFreeLibraryAndExitThread(HMODULE hModule,DWORD dwExitCode)
 GPTR_IMPL(JITNotification, g_pNotificationTable);
 GVAL_IMPL(ULONG32, g_dacNotificationFlags);
 
-GVAL_IMPL_INIT(size_t, g_dataBreakpoint, 0);
 GVAL_IMPL_INIT(size_t, g_dataBreakpoint_object, 0);
-GVAL_IMPL_INIT(size_t, g_dataBreakpoint_object_offset, 0);
 
 BOOL IsValidMethodCodeNotification(USHORT Notification)
 {
@@ -3466,7 +3464,7 @@ void DACNotify::DoGCNotification(const GcEvtArgs& args)
     }
 }
 
-void DACNotify::DoBeforeMove(const uint8_t* sourceBegin, const uint8_t* sourceEnd, const uint8_t* destinationBegin)
+void DACNotify::ResumeDataBreakpoint(const uint8_t* pOldDatabreakpointObj, const uint8_t* pNewDatabreakpointObj)
 {
 	CONTRACTL
 	{
@@ -3476,11 +3474,11 @@ void DACNotify::DoBeforeMove(const uint8_t* sourceBegin, const uint8_t* sourceEn
 		MODE_COOPERATIVE;
 	}
 	CONTRACTL_END;
-	TADDR Args[4] = { BEFORE_MOVE_NOTIFICATION, (TADDR)sourceBegin, (TADDR)sourceEnd, (TADDR)destinationBegin };
-	DACNotifyExceptionHelper(Args, 4);
+	TADDR Args[3] = { RESUME_DATABREAKPOINT_NOTIFICATION, (TADDR)pOldDatabreakpointObj, (TADDR)pNewDatabreakpointObj};
+	DACNotifyExceptionHelper(Args, 3);
 }
 
-void DACNotify::DoAfterMove()
+void DACNotify::SuspendDataBreakpoint()
 {
 	CONTRACTL
 	{
@@ -3490,7 +3488,7 @@ void DACNotify::DoAfterMove()
 		MODE_COOPERATIVE;
 	}
 	CONTRACTL_END;
-	TADDR Args[1] = { AFTER_MOVE_NOTIFICATION };
+	TADDR Args[1] = { SUSPEND_DATABREAKPOINT_NOTIFICATION };
 	DACNotifyExceptionHelper(Args, 1);
 }
 
@@ -3621,25 +3619,23 @@ BOOL DACNotify::ParseGCNotification(TADDR Args[], GcEvtArgs& args)
     return bRet;
 }
 
-BOOL DACNotify::ParseBeforeMoveNotification(TADDR Args[], TADDR& sourceBegin, TADDR& sourceEnd, TADDR& destinationBegin)
+BOOL DACNotify::ParseResumeDataBreakpointNotification(TADDR Args[], TADDR& oldDataBreakpointAddr, TADDR& newDataBreakpointAddr)
 {
-	_ASSERTE(Args[0] == BEFORE_MOVE_NOTIFICATION);
-	if (Args[0] != BEFORE_MOVE_NOTIFICATION)
+	_ASSERTE(Args[0] == RESUME_DATABREAKPOINT_NOTIFICATION);
+	if (Args[0] != RESUME_DATABREAKPOINT_NOTIFICATION)
 	{
 		return FALSE;
 	}
 
-	sourceBegin = Args[1];
-	sourceEnd = Args[2];
-	destinationBegin = Args[3];
-
+	oldDataBreakpointAddr = Args[1];
+	newDataBreakpointAddr = Args[2];
 	return TRUE;
 }
 
-BOOL DACNotify::ParseAfterMoveNotification(TADDR Args[])
+BOOL DACNotify::ParseSuspendDataBreakpointNotification(TADDR Args[])
 {
-	_ASSERTE(Args[0] == AFTER_MOVE_NOTIFICATION);
-	if (Args[0] != AFTER_MOVE_NOTIFICATION)
+	_ASSERTE(Args[0] == SUSPEND_DATABREAKPOINT_NOTIFICATION);
+	if (Args[0] != SUSPEND_DATABREAKPOINT_NOTIFICATION)
 	{
 		return FALSE;
 	}

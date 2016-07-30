@@ -1079,9 +1079,7 @@ GARY_DECL(size_t, g_clrNotificationArguments, MAX_CLR_NOTIFICATION_ARGS);
 extern void InitializeClrNotifications();
 
 // The current data breakpoint address
-GVAL_DECL(size_t, g_dataBreakpoint);
 GVAL_DECL(size_t, g_dataBreakpoint_object);
-GVAL_DECL(size_t, g_dataBreakpoint_object_offset);
 
 GPTR_DECL(JITNotification, g_pNotificationTable);
 GVAL_DECL(ULONG32, g_dacNotificationFlags);
@@ -1242,8 +1240,8 @@ public:
 		EXCEPTION_NOTIFICATION = 5,
 		GC_NOTIFICATION = 6,
 		CATCH_ENTER_NOTIFICATION = 7,
-		BEFORE_MOVE_NOTIFICATION = 8,
-		AFTER_MOVE_NOTIFICATION = 9,
+		RESUME_DATABREAKPOINT_NOTIFICATION = 8,
+		SUSPEND_DATABREAKPOINT_NOTIFICATION = 9,
     };
     
     // called from the runtime
@@ -1253,8 +1251,8 @@ public:
     static void DoModuleUnloadNotification(Module *Module);
     static void DoExceptionNotification(class Thread* ThreadPtr);
     static void DoGCNotification(const GcEvtArgs& evtargs);
-    static void DoBeforeMove(const uint8_t* sourceBegin, const uint8_t* sourceEnd, const uint8_t* destinationBegin);
-    static void DoAfterMove();
+	static void ResumeDataBreakpoint(const uint8_t* pOldDatabreakpointObj, const uint8_t* pNewDatabreakpointObj);
+    static void SuspendDataBreakpoint();
     static void DoExceptionCatcherEnterNotification(MethodDesc *MethodDescPtr, DWORD nativeOffset);
 
     // called from the DAC
@@ -1265,8 +1263,8 @@ public:
     static BOOL ParseModuleUnloadNotification(TADDR Args[], TADDR& ModulePtr);
     static BOOL ParseExceptionNotification(TADDR Args[], TADDR& ThreadPtr);
     static BOOL ParseGCNotification(TADDR Args[], GcEvtArgs& evtargs);
-    static BOOL ParseBeforeMoveNotification(TADDR Args[], TADDR& sourceBegin, TADDR& sourceEnd, TADDR& destinationBegin);
-    static BOOL ParseAfterMoveNotification(TADDR Args[]);
+    static BOOL ParseResumeDataBreakpointNotification(TADDR Args[], TADDR& oldDataBreakpointObjAddr, TADDR& newDataBreakpointObjAddr);
+    static BOOL ParseSuspendDataBreakpointNotification(TADDR Args[]);
     static BOOL ParseExceptionCatcherEnterNotification(TADDR Args[], TADDR& MethodDescPtr, DWORD& nativeOffset);
 };
 
