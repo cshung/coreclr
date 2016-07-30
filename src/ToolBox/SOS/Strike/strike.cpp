@@ -6703,20 +6703,10 @@ void EnableDataBreakpoint(TADDR dataBreakpointObjAddr, size_t offset)
 void DisableDataBreakpoint(TADDR, size_t)
 {
 	HRESULT Status;
-	/*ISOSDacInterface5 *psos5 = NULL;
-	if (SUCCEEDED(Status = g_sos->QueryInterface(__uuidof(ISOSDacInterface5), (void**)&psos5)))
-	{
-		psos5->SetDataBreakpoint(0, 0);
-	}
-	else
-	{
-		ExtOut("Sorry - something gone wrong with SetDataBreakpoint()");
-	}*/
-
     char buffer[64];
     sprintf_s(buffer, _countof(buffer), "bc *");
     ExtOut("%s\r\n", buffer);
-    // g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
+    g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
 }
 
 // According to the latest debuggers these callbacks will not get called
