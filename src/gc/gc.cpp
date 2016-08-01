@@ -34901,6 +34901,11 @@ GCHeap::GarbageCollect(int generation, BOOL low_memory_p, int mode)
 		DACNotify::ResumeDataBreakpoint((uint8_t*)g_dataBreakpoint_object, (uint8_t*)newAddress);
 		if (newAddress != (Object*)g_dataBreakpoint_object)
 		{
+			if (newAddress == NULL)
+			{
+				DestroyTypedHandle(OBJECTHANDLE(g_dataBreakpoint_handle));
+				g_dataBreakpoint_handle = nullptr;
+			}
 			g_dataBreakpoint_object = (size_t)newAddress;
 		}
 	}
