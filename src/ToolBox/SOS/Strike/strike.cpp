@@ -6679,12 +6679,16 @@ public:
 	TADDR objAddress;
 	size_t fieldOffset;
 private:
+#ifndef FEATURE_PAL
 	PDEBUG_BREAKPOINT pDebugBreakpoint;
+#endif
 	DataBreakpoint(TADDR objAddr, size_t offset) : objAddress(objAddr), fieldOffset(offset) {}
 public:
 	~DataBreakpoint()
 	{
+#ifndef FEATURE_PAL
 		g_ExtControl->RemoveBreakpoint(pDebugBreakpoint);
+#endif
 	}
 
 	static DataBreakpoint* CreateDataBreakpoint(TADDR dataBreakpointObjAddr, size_t offset)
@@ -6700,10 +6704,12 @@ public:
 			ExtOut("Sorry - something gone wrong with SetDataBreakpoint()");
 			return NULL;
 		}
+		DataBreakpoint *pDataBreakpoint = new DataBreakpoint(dataBreakpointObjAddr, offset);
+
+#ifndef FEATURE_PAL
 		const ULONG type = DEBUG_BREAKPOINT_DATA;
 		const ULONG desiredId = DEBUG_ANY_ID;
 
-		DataBreakpoint *pDataBreakpoint = new DataBreakpoint(dataBreakpointObjAddr, offset);
 		if (S_OK != g_ExtControl->AddBreakpoint(type, desiredId, &(pDataBreakpoint->pDebugBreakpoint)))
 		{
 			delete pDataBreakpoint;
@@ -6730,31 +6736,38 @@ public:
 			delete pDataBreakpoint;
 			return NULL;
 		}
+#endif
 		return pDataBreakpoint;
 	}
 
 	HRESULT ResetObjAddr(ULONG64 addr)
 	{
+#ifndef FEATURE_PAL
 		HRESULT Status;
 		objAddress = addr;
 		IfFailRet(pDebugBreakpoint->SetOffset(addr + fieldOffset));
+#endif
 		return S_OK;
 	}
 
 	HRESULT Disable()
 	{
+#ifndef FEATURE_PAL
 		HRESULT Status;
 		ULONG flags;
 		pDebugBreakpoint->GetFlags(&flags);
 		IfFailRet(pDebugBreakpoint->RemoveFlags(DEBUG_BREAKPOINT_ENABLED));
 		pDebugBreakpoint->GetFlags(&flags);
+#endif
 		return S_OK;
 	}
 
 	HRESULT Enable()
 	{
+#ifndef FEATURE_PAL
 		HRESULT Status;
 		IfFailRet(pDebugBreakpoint->AddFlags(DEBUG_BREAKPOINT_ENABLED));
+#endif
 		return S_OK;
 	}
 
