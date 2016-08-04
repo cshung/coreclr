@@ -232,4 +232,3 @@ EXPORTS
 
     InsertDataBreakpoint
     ListDataBreakpoint
-    CheckDataBreakpointsAlive

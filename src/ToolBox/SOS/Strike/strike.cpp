@@ -128,13 +128,6 @@
 
 #include "tls.h"
 
-struct DataBreakpointNode
-{
-    TADDR m_address;
-	size_t offset;
-	PDEBUG_BREAKPOINT bp;
-    struct DataBreakpointNode* m_next;
-}*databreakpoints = nullptr;
 
 typedef struct _VM_COUNTERS {
     SIZE_T PeakVirtualSize;
@@ -6680,62 +6673,179 @@ BOOL g_fAllowJitOptimization = TRUE;
 // execution is about to enter a catch clause
 BOOL g_stopOnNextCatch = FALSE;
 
-HRESULT SetDataBreakpoint(TADDR dataBreakpointObjAddr, size_t offset, PDEBUG_BREAKPOINT *ppbp)
+class DataBreakpoint
 {
-	HRESULT Status;
-	ISOSDacInterface5 *psos5 = NULL;
-	if (SUCCEEDED(Status = g_sos->QueryInterface(__uuidof(ISOSDacInterface5), (void**)&psos5)))
+public:
+	TADDR objAddress;
+	size_t fieldOffset;
+private:
+	PDEBUG_BREAKPOINT pDebugBreakpoint;
+	DataBreakpoint(TADDR objAddr, size_t offset) : objAddress(objAddr), fieldOffset(offset) {}
+public:
+	~DataBreakpoint()
 	{
-		psos5->SetDataBreakpoint(dataBreakpointObjAddr);
+		g_ExtControl->RemoveBreakpoint(pDebugBreakpoint);
 	}
-	else
+
+	static DataBreakpoint* CreateDataBreakpoint(TADDR dataBreakpointObjAddr, size_t offset)
 	{
-		ExtOut("Sorry - something gone wrong with SetDataBreakpoint()");
+		HRESULT Status;
+		ISOSDacInterface5 *psos5 = NULL;
+		if (SUCCEEDED(Status = g_sos->QueryInterface(__uuidof(ISOSDacInterface5), (void**)&psos5)))
+		{
+			psos5->SetDataBreakpoint(dataBreakpointObjAddr);
+		}
+		else
+		{
+			ExtOut("Sorry - something gone wrong with SetDataBreakpoint()");
+			return NULL;
+		}
+		const ULONG type = DEBUG_BREAKPOINT_DATA;
+		const ULONG desiredId = DEBUG_ANY_ID;
+
+		DataBreakpoint *pDataBreakpoint = new DataBreakpoint(dataBreakpointObjAddr, offset);
+		if (S_OK != g_ExtControl->AddBreakpoint(type, desiredId, &(pDataBreakpoint->pDebugBreakpoint)))
+		{
+			delete pDataBreakpoint;
+			return NULL;
+		}
+
+		PDEBUG_BREAKPOINT bp = pDataBreakpoint->pDebugBreakpoint;
+		if (S_OK != bp->SetDataParameters(4, DEBUG_BREAK_WRITE))
+		{
+			delete pDataBreakpoint;
+			return NULL;
+		}
+
+		ULONG64 addr = dataBreakpointObjAddr + offset;
+
+		if (S_OK != bp->SetOffset(addr))
+		{
+			delete pDataBreakpoint;
+			return NULL;
+		}
+
+		if (S_OK != bp->SetFlags(DEBUG_BREAKPOINT_ENABLED))
+		{
+			delete pDataBreakpoint;
+			return NULL;
+		}
+		return pDataBreakpoint;
 	}
-	const ULONG type = DEBUG_BREAKPOINT_DATA;
-	const ULONG desiredId = DEBUG_ANY_ID;
-	IfFailRet(g_ExtControl->AddBreakpoint(type, desiredId, ppbp));	
-	IfFailRet((*ppbp)->SetDataParameters(4, DEBUG_BREAK_WRITE));
-	ULONG64 addr = dataBreakpointObjAddr + offset;
-	IfFailRet((*ppbp)->SetOffset(addr));
-	IfFailRet((*ppbp)->SetFlags(DEBUG_BREAKPOINT_ENABLED));
-	return S_OK;
-}
 
-HRESULT ResetDataBreakpointAddr(PDEBUG_BREAKPOINT bp, ULONG64 addr)
+	HRESULT ResetObjAddr(ULONG64 addr)
+	{
+		HRESULT Status;
+		objAddress = addr;
+		IfFailRet(pDebugBreakpoint->SetOffset(addr + fieldOffset));
+		return S_OK;
+	}
+
+	HRESULT Disable()
+	{
+		HRESULT Status;
+		ULONG flags;
+		pDebugBreakpoint->GetFlags(&flags);
+		IfFailRet(pDebugBreakpoint->RemoveFlags(DEBUG_BREAKPOINT_ENABLED));
+		pDebugBreakpoint->GetFlags(&flags);
+		return S_OK;
+	}
+
+	HRESULT Enable()
+	{
+		HRESULT Status;
+		IfFailRet(pDebugBreakpoint->AddFlags(DEBUG_BREAKPOINT_ENABLED));
+		return S_OK;
+	}
+
+};
+
+
+class DataBreakpoints
 {
-	HRESULT Status;
-	IfFailRet(bp->SetOffset(addr));
-	return S_OK;
-}
+	struct FreeNode
+	{
+		int index;
+		FreeNode* next;
+	};
+private:
+	FreeNode* head;
+	DataBreakpoint** breakpoints;
+public:
+	static const int MaxSize = 4;
+	DataBreakpoints()
+	{
+		head = new FreeNode();
+		FreeNode* prev = head;
+		breakpoints = new DataBreakpoint*[4];
+		for (int i = 0; i < MaxSize; i++)
+		{
+			breakpoints[i] = NULL;
+			FreeNode* cur = new FreeNode();
+			cur->index = 0;
+			cur->next = NULL;
+			prev->next = cur;
+		}
+	}
 
+	HRESULT SuspendAll()
+	{
+		for (int i = 0; i < MaxSize; i++)
+		{
+			if (breakpoints[i] != NULL)
+			{
+				if (S_OK != breakpoints[i]->Disable())
+				{
+					return E_FAIL;
+				}
+			}
+		}
+		return S_OK;
+	}
 
-HRESULT DisableDataBreakpoint(PDEBUG_BREAKPOINT bp)
-{
-	HRESULT Status;
-	ULONG flags;
-	bp->GetFlags(&flags);
-	IfFailRet(bp->RemoveFlags(DEBUG_BREAKPOINT_ENABLED));
-	bp->GetFlags(&flags);	
-	return S_OK;
-}
+	HRESULT Insert(TADDR dataBreakpointObjAddr, size_t offset)
+	{
+		FreeNode* free = head->next;
+		if (free == NULL)
+		{
+			ExtOut("Can't set more than %d databreakpoints", MaxSize);
+			return E_FAIL;
+		}
 
+		head->next = free->next;
+		int index = free->index;
+		breakpoints[index] = DataBreakpoint::CreateDataBreakpoint(dataBreakpointObjAddr, offset);
+		if (breakpoints[index] == NULL)
+		{
+			ExtOut("Unknow error. Can't create databreakpoint");
+			free->next = head->next;
+			head->next = free;
+			return E_FAIL;
+		}
+		delete free;
+		free = NULL;
+		return S_OK;
+	}
 
-HRESULT EnableDataBreakpoint(PDEBUG_BREAKPOINT bp)
-{
-	HRESULT Status;
-	IfFailRet(bp->AddFlags(DEBUG_BREAKPOINT_ENABLED));
-	return S_OK;
-}
+	void Remove(int i)
+	{
+		if (breakpoints[i] == NULL)
+			return;
+		
+		delete breakpoints[i];
+		breakpoints[i] = NULL;
+		FreeNode* free = new FreeNode();
+		free->index = i;
+		free->next = head->next;
+		head->next = free;
+	}
 
+	DataBreakpoint* operator[] (int i) {
+		return breakpoints[i];
+	}
+};
 
-HRESULT RemoveDataBreakpoint(PDEBUG_BREAKPOINT *bp)
-{
-	HRESULT Status;
-	IfFailRet(g_ExtControl->RemoveBreakpoint(*bp));
-	*bp = NULL;
-	return S_OK;
-}
+DataBreakpoints* pDataBreakpoints = NULL;
 
 
 // According to the latest debuggers these callbacks will not get called
@@ -6954,33 +7064,35 @@ public:
         /* [in] */ CLRDATA_ADDRESS oldDataBreakpointObjAddr,
         /* [in] */ CLRDATA_ADDRESS newDataBreakpointObjAddr)
     {
-        DataBreakpointNode* cur = databreakpoints;
-        while (cur != nullptr)
-        {
-            if (cur->m_address == oldDataBreakpointObjAddr && cur->m_address != newDataBreakpointObjAddr)
-            {
-				cur->m_address = newDataBreakpointObjAddr;
-				ResetDataBreakpointAddr(cur->bp, cur->m_address + cur->offset);
-            }
-			EnableDataBreakpoint(cur->bp);
-            cur = cur->m_next;
-        }
-
+		// Should remove this loop. Maybe Consider adding a small optimization for this.
+		for (int i = 0; i < DataBreakpoints::MaxSize; i++)
+		{
+			DataBreakpoint* pDataBreakpoint = (*pDataBreakpoints)[i];
+			if (pDataBreakpoint == NULL)
+				continue;
+			if (pDataBreakpoint->objAddress == oldDataBreakpointObjAddr)
+			{
+				if (oldDataBreakpointObjAddr != newDataBreakpointObjAddr)
+				{
+					pDataBreakpoint->ResetObjAddr(newDataBreakpointObjAddr);
+				}
+				else if (newDataBreakpointObjAddr == 0)
+				{
+					pDataBreakpoints->Remove(i);
+					ExtOut("Object is dead, remove this databreakpoint\n");
+					continue;
+				}
+			}
+			pDataBreakpoint->Enable();
+		}
         m_dbgStatus = DEBUG_STATUS_GO_HANDLED;
         return S_OK;
     }
 
     STDMETHODIMP SuspendDataBreakpointEvent()
     {
-        DataBreakpointNode* cur = databreakpoints;
-        while (cur != nullptr)
-        {
-            DisableDataBreakpoint(cur->bp);
-            cur = cur->m_next;
-        }
-
         m_dbgStatus = DEBUG_STATUS_GO_HANDLED;
-        return S_OK;
+		return pDataBreakpoints->SuspendAll();
     }
 	
     static int GetCondemnedGen()
@@ -14638,19 +14750,15 @@ DECLARE_API(InsertDataBreakpoint)
 	sprintf_s(buffer, _countof(buffer), "sxe -c \"!HandleCLRN\" clrn");
 	Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
 	
-	//EnableDataBreakpoint(p_Object, fieldOffset);
-
-    DataBreakpointNode* newBreakpoint = new (std::nothrow) DataBreakpointNode();
-    if (newBreakpoint == nullptr)
-    {
-        return E_OUTOFMEMORY;
-    }
-
-    newBreakpoint->m_address = p_Object;
-	newBreakpoint->offset = fieldOffset;
-    newBreakpoint->m_next = databreakpoints;
-    databreakpoints = newBreakpoint;
-	IfFailRet(SetDataBreakpoint(newBreakpoint->m_address, newBreakpoint->offset, &newBreakpoint->bp));
+	if (pDataBreakpoints == NULL)
+	{
+		pDataBreakpoints = new DataBreakpoints();
+	}
+    
+	if (S_OK != pDataBreakpoints->Insert(p_Object, fieldOffset))
+	{
+		return E_FAIL;
+	}
     return S_OK;
 }
 
@@ -14658,34 +14766,12 @@ DECLARE_API(ListDataBreakpoint)
 {
     INIT_API();
     MINIDUMP_NOT_SUPPORTED();
-    DataBreakpointNode* cur = databreakpoints;
-    while (cur != nullptr)
-    {
-        ExtOut("%p\r\n", cur->m_address);
-        cur = cur->m_next;
-    }
-
-    return S_OK;
-}
-
-
-DECLARE_API(CheckDataBreakpointsAlive)
-{
-	INIT_API();
-	MINIDUMP_NOT_SUPPORTED();
-
-	DataBreakpointNode* cur = databreakpoints;
-	while (cur != nullptr)
+	for (int i = 0; i < DataBreakpoints::MaxSize; i++)
 	{
-		TADDR taObj = cur->m_address;
-		if (!sos::IsObject(taObj, true))
+		if ((*pDataBreakpoints)[i] != NULL)
 		{
-			ExtOut("<Note: this object is no longer valid. Disable the data breakpoint for object:%p>\n", taObj);
-			//DisableDataBreakpoint(cur->m_address, cur->offset);
+			ExtOut("%p\r\n", (*pDataBreakpoints)[i]->objAddress);
 		}
-		///ExtOut("%p\r\n", cur->m_address);
-		cur = cur->m_next;
 	}
-
-	return S_OK;
+    return S_OK;
 }
