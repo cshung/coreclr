@@ -1227,6 +1227,7 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
 
     calleeContext->m_Policy           = policy;
     calleeContext->m_CodeSizeEstimate = policy->CodeSizeEstimate();
+    // Andrew: m_Callee is the inlinee function - useful when reporting 
     calleeContext->m_Callee           = inlineInfo->fncHandle;
     // +1 here since we set this before calling NoteOutcome.
     calleeContext->m_Ordinal = m_InlineCount + 1;

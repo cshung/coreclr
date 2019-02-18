@@ -10878,6 +10878,7 @@ void CodeGen::genIPmappingListDisp()
 
 void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel)
 {
+    // Andrew - it appears this is where the information get created
     if (!compiler->opts.compDbgInfo)
     {
         return;
@@ -10895,7 +10896,7 @@ void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel)
 
             if (offsx != ICorDebugInfo::NO_MAPPING)
             {
-                noway_assert(jitGetILoffs(offsx) <= compiler->info.compILCodeSize);
+                // noway_assert(jitGetILoffs(offsx) <= compiler->info.compILCodeSize);
             }
 
             // Ignore this one if it's the same IL offset as the last one we saw.

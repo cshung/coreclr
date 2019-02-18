@@ -10408,6 +10408,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             break;
 
         case GT_IL_OFFSET:
+            // Andrew: With my hacks - the IL offsets are somehow passed down (with lots of ???)
+            // But unless we generate a GT_IL_OFFSET, it won't get to the debug stream
             printf(" IL offset: ");
             if (tree->gtStmt.gtStmtILoffsx == BAD_IL_OFFSET)
             {

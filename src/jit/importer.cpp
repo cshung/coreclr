@@ -476,7 +476,8 @@ inline void Compiler::impEndTreeList(BasicBlock* block)
 #ifdef DEBUG
     if (impLastILoffsStmt != nullptr)
     {
-        impLastILoffsStmt->gtStmt.gtStmtLastILoffs = compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs;
+        // impLastILoffsStmt->gtStmt.gtStmtLastILoffs = compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs;
+        impLastILoffsStmt->gtStmt.gtStmtLastILoffs = impCurOpcOffs;
         impLastILoffsStmt                          = nullptr;
     }
 
@@ -2652,18 +2653,18 @@ GenTree* Compiler::impCloneExpr(GenTree*             tree,
 
 inline void Compiler::impCurStmtOffsSet(IL_OFFSET offs)
 {
-    if (compIsForInlining())
-    {
-        GenTree* callStmt = impInlineInfo->iciStmt;
-        assert(callStmt->gtOper == GT_STMT);
-        impCurStmtOffs = callStmt->gtStmt.gtStmtILoffsx;
-    }
-    else
-    {
+    // if (compIsForInlining())
+    // {
+    //     GenTree* callStmt = impInlineInfo->iciStmt;
+    //     assert(callStmt->gtOper == GT_STMT);
+    //     impCurStmtOffs = callStmt->gtStmt.gtStmtILoffsx;
+    // }
+    // else
+    // {
         assert(offs == BAD_IL_OFFSET || (offs & IL_OFFSETX_BITS) == 0);
         IL_OFFSETX stkBit = (verCurrentState.esStackDepth > 0) ? IL_OFFSETX_STKBIT : 0;
         impCurStmtOffs    = offs | stkBit;
-    }
+    // }
 }
 
 /*****************************************************************************
@@ -2671,17 +2672,17 @@ inline void Compiler::impCurStmtOffsSet(IL_OFFSET offs)
  */
 inline IL_OFFSETX Compiler::impCurILOffset(IL_OFFSET offs, bool callInstruction)
 {
-    if (compIsForInlining())
-    {
-        return BAD_IL_OFFSET;
-    }
-    else
-    {
+    // if (compIsForInlining())
+    // {
+    //     return BAD_IL_OFFSET;
+    // }
+    // else
+    // {
         assert(offs == BAD_IL_OFFSET || (offs & IL_OFFSETX_BITS) == 0);
         IL_OFFSETX stkBit             = (verCurrentState.esStackDepth > 0) ? IL_OFFSETX_STKBIT : 0;
         IL_OFFSETX callInstructionBit = callInstruction ? IL_OFFSETX_CALLINSTRUCTIONBIT : 0;
         return offs | stkBit | callInstructionBit;
-    }
+    // }
 }
 
 //------------------------------------------------------------------------
@@ -2725,11 +2726,13 @@ void Compiler::impNoteLastILoffs()
         assert(impTreeLast);
         assert(impTreeLast->gtOper == GT_STMT);
 
-        impTreeLast->gtStmt.gtStmtLastILoffs = compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs;
+        // impTreeLast->gtStmt.gtStmtLastILoffs = compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs;
+        impTreeLast->gtStmt.gtStmtLastILoffs = impCurOpcOffs;
     }
     else
     {
-        impLastILoffsStmt->gtStmt.gtStmtLastILoffs = compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs;
+        // impLastILoffsStmt->gtStmt.gtStmtLastILoffs = compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs;
+        impLastILoffsStmt->gtStmt.gtStmtLastILoffs = impCurOpcOffs;
         impLastILoffsStmt                          = nullptr;
     }
 }
@@ -2767,10 +2770,10 @@ unsigned Compiler::impInitBlockLineInfo()
 
     impCurStmtOffsSet(BAD_IL_OFFSET);
 
-    if (compIsForInlining())
-    {
-        return ~0;
-    }
+    // if (compIsForInlining())
+    // {
+    //    return ~0;
+    // }
 
     IL_OFFSET blockOffs = compCurBB->bbCodeOffs;
 
@@ -10677,7 +10680,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         if (opts.compDbgInfo)
 #endif
         {
-            if (!compIsForInlining())
+            // Andrew: It looks like the IL offset information for the inlinee are swallowed here
+            // if (!compIsForInlining())
             {
                 nxtStmtOffs =
                     (nxtStmtIndex < info.compStmtOffsetsCount) ? info.compStmtOffsets[nxtStmtIndex] : BAD_IL_OFFSET;
@@ -10778,6 +10782,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     impCurStmtOffsSet(opcodeOffs);
                 }
+
+                // The heuristics above does not really work - here is my hack
+                impCurStmtOffsSet(opcodeOffs);
 
                 assert(impCurStmtOffs == BAD_IL_OFFSET || nxtStmtOffs == BAD_IL_OFFSET ||
                        jitGetILoffs(impCurStmtOffs) <= nxtStmtOffs);
@@ -11034,7 +11041,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1 = impInlineFetchArg(lclNum, impInlineInfo->inlArgInfo, impInlineInfo->lclVarInfo);
                     noway_assert(op1->gtOper == GT_LCL_VAR);
                     lclNum = op1->AsLclVar()->gtLclNum;
-
+                    // Andrew: starting here - we will pop the stack, and whenever the esStackDepth is non zero
+                    // impCurStmtOffsSet would set the stack bit, which will make the IL OFFSET invalid for
+                    // subsequent construction of GT_IL_OFFSET in Rationalize
                     goto VAR_ST_VALID;
                 }
 

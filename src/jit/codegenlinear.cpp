@@ -408,6 +408,18 @@ void CodeGen::genCodeForBBlist()
             {
                 genEnsureCodeEmitted(currentILOffset);
                 currentILOffset = node->gtStmt.gtStmtILoffsx;
+                // Andrew: This call site look interesting - the information comes from gtStmtILoffsx
+                if (currentILOffset != BAD_IL_OFFSET)
+                {
+                    if (node->AsStmt()->gtInlineContext && node->AsStmt()->gtInlineContext->GetCallee())
+                    {
+                        JITDUMP("genIPmappingAdd(%d) for %s\n", currentILOffset, compiler->eeGetMethodFullName(node->AsStmt()->gtInlineContext->GetCallee()));
+                    }
+                    else
+                    {
+                        JITDUMP("genIPmappingAdd(%d) for none\n", currentILOffset);
+                    }
+                }
                 genIPmappingAdd(currentILOffset, firstMapping);
                 firstMapping = false;
             }
@@ -415,8 +427,10 @@ void CodeGen::genCodeForBBlist()
 #ifdef DEBUG
             if (node->OperGet() == GT_IL_OFFSET)
             {
+                /*
                 noway_assert(node->gtStmt.gtStmtLastILoffs <= compiler->info.compILCodeSize ||
                              node->gtStmt.gtStmtLastILoffs == BAD_IL_OFFSET);
+                */
 
                 if (compiler->opts.dspCode && compiler->opts.dspInstrs &&
                     node->gtStmt.gtStmtLastILoffs != BAD_IL_OFFSET)
