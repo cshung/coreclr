@@ -1586,6 +1586,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     if (compiler->verbose)
     {
         unsigned seqNum = treeNode->gtSeqNum; // Useful for setting a conditional break in Visual Studio
+        // To debug code generation for N0014
+        // if (seqNum == 14) { AndrewBreak(); }
         compiler->gtDispLIRNode(treeNode, "Generating: ");
     }
 #endif // DEBUG

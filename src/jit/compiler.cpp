@@ -2902,6 +2902,15 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
     }
 
+    // Uncomment this to discover the exact name of the function you are interested in
+    // printf("%s\n", info.compFullName);
+    if (strcmp("OddPower:Main():int", info.compFullName) == 0)
+    {
+        // This will cause the compiler to spill a lot of debug logs
+        // In various places, we can condition on this variable and call AndrewBreak()
+        verboseDump = true;
+    }
+
     if (verboseDump)
     {
         verbose = true;
