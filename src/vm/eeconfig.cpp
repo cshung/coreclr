@@ -1264,6 +1264,9 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 #if defined(FEATURE_GDBJIT_FRAME)
     fGDBJitEmitDebugFrame = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GDBJitEmitDebugFrame) != 0;
 #endif
+
+    dwStaticBucketSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_STATIC_BUCKET_SIZE);
+    dwStringBucketSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_STRING_BUCKET_SIZE);
     return hr;
 }
 

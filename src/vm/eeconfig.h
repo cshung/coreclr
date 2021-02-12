@@ -1105,6 +1105,17 @@ private:
 public:
     DWORD GetSleepOnExit()
     { return dwSleepOnExit; }
+
+private:
+    DWORD dwStaticBucketSize;
+    DWORD dwStringBucketSize;
+
+public:
+    DWORD GetStaticBucketSize()
+    { return dwStaticBucketSize; }
+
+    DWORD GetStringBucketSize()
+    { return dwStringBucketSize; }
 };
 
 

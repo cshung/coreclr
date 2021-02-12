@@ -92,8 +92,6 @@
 static const WCHAR DEFAULT_DOMAIN_FRIENDLY_NAME[] = W("DefaultDomain");
 static const WCHAR OTHER_DOMAIN_FRIENDLY_NAME_PREFIX[] = W("Domain");
 
-#define STATIC_OBJECT_TABLE_BUCKET_SIZE 1020
-
 // Statics
 
 SPTR_IMPL(AppDomain, AppDomain, m_pTheAppDomain);
@@ -1563,7 +1561,7 @@ void BaseDomain::InitLargeHeapHandleTable()
     }
     CONTRACTL_END;
 
-    m_pLargeHeapHandleTable = new LargeHeapHandleTable(this, STATIC_OBJECT_TABLE_BUCKET_SIZE);
+    m_pLargeHeapHandleTable = new LargeHeapHandleTable(this, g_pConfig->GetStaticBucketSize());
 
 #ifdef _DEBUG
     m_pLargeHeapHandleTable->RegisterCrstDebug(&m_LargeHeapHandleTableCrst);

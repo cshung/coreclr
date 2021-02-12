@@ -41,8 +41,7 @@
     and we know the StringLiteralEntry so found 1) can't be destroyed because that table keeps
     an AddRef on it and 2) isn't internally modified once created.
 */
-    
-#define GLOBAL_STRING_TABLE_BUCKET_SIZE 128
+
 #define INIT_NUM_APP_DOMAIN_STRING_BUCKETS 59
 #define INIT_NUM_GLOBAL_STRING_BUCKETS 131
 
@@ -290,7 +289,7 @@ GlobalStringLiteralMap::GlobalStringLiteralMap()
 : m_StringToEntryHashTable(NULL)
 , m_MemoryPool(NULL)
 , m_HashTableCrstGlobal(CrstGlobalStrLiteralMap)
-, m_LargeHeapHandleTable(SystemDomain::System(), GLOBAL_STRING_TABLE_BUCKET_SIZE)
+, m_LargeHeapHandleTable(SystemDomain::System(), g_pConfig->GetStringBucketSize())
 {
     CONTRACTL
     {
