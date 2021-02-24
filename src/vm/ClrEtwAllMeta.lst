@@ -628,3 +628,8 @@ nomac:StressLogTask:::StressLogEvent_V1
 # StackWalk events
 ##################
 nomac:CLRStackStress:::CLRStackWalkStress
+
+###############
+# AllocateHandleArray events
+###############
+stack:AllocateHandleArrayTask:::
