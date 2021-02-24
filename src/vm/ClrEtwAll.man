@@ -81,6 +81,8 @@
                              message="$(string.RuntimePublisher.CompilationKeywordMessage)" symbol="CLR_COMPILATION_KEYWORD" />
                     <keyword name="CompilationDiagnosticKeyword" mask="0x2000000000"
                              message="$(string.RuntimePublisher.CompilationDiagnosticKeywordMessage)" symbol="CLR_COMPILATIONDIAGNOSTIC_KEYWORD" />
+                    <keyword name="AllocateHandleArrayKeyword" mask="0x0000800000000000"
+                             message="$(string.RuntimePublisher.AllocateHandleArrayKeywordMessage)" symbol="ALLOCATE_HANDLE_ARRAY_KEYWORD" />
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -387,6 +389,14 @@
                         </opcodes>
                     </task>
                 <!--Next available ID is 32-->
+                    <task name="AllocateHandleArrayTask" symbol="ALLOCATE_HANDLE_ARRAY_TASK"
+                          value="239" eventGUID="{d7c0befd-285e-4ce2-96c6-0b8d30c42f99}"
+                          message="$(string.RuntimePublisher.AllocateHandleArrayTaskMessage)">
+                        <opcodes>
+                            <!-- 11 is the minimal possible opcode value, and it only need to be unique within a task -->
+                            <opcode name="AllocateHandleArrayOpcode" message="$(string.RuntimePublisher.AllocateHandleArrayOpcodeMessage)" symbol="ALLOCATE_HANDLE_ARRAY_OPCODE" value="11"/>
+                        </opcodes>
+                    </task>
                 </tasks>
                 <!--Maps-->
                 <maps>
@@ -2476,6 +2486,18 @@
                         </Settings>
                       </UserData>
                     </template>
+
+                    <template tid="AllocateHandleArrayTemplate">
+                        <data name="AllocateHandleArrayField" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+
+                        <UserData>
+                            <AllocateHandleArrayTemplate xmlns="myNs">
+                                <AllocateHandleArrayField> %1 </AllocateHandleArrayField>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                            </AllocateHandleArrayTemplate>
+                        </UserData>
+                    </template>
                 </templates>
 
                 <events>
@@ -3403,6 +3425,11 @@
                     <event value="284" version="0" level="win:Informational" template="TieredCompilationBackgroundJitStop"
                            keywords="CompilationKeyword" task="TieredCompilation" opcode="win:Stop"
                            symbol="TieredCompilationBackgroundJitStop" message="$(string.RuntimePublisher.TieredCompilationBackgroundJitStopEventMessage)"/>
+
+                    <event value="511" version="1" level="win:Informational"  template="AllocateHandleArrayTemplate"
+                           keywords ="AllocateHandleArrayKeyword"  opcode="AllocateHandleArrayOpcode"
+                           task="AllocateHandleArrayTask"
+                           symbol="AllocateHandleArrayEvent" message="$(string.RuntimePublisher.AllocateHandleArrayEventMessage)"/>
                 </events>
             </provider>
 
@@ -6627,6 +6654,7 @@
                 <string id="RuntimePublisher.TieredCompilationResumeEventMessage" value="ClrInstanceID=%1;%nNewMethodCount=%2" />
                 <string id="RuntimePublisher.TieredCompilationBackgroundJitStartEventMessage" value="ClrInstanceID=%1;%nPendingMethodCount=%2" />
                 <string id="RuntimePublisher.TieredCompilationBackgroundJitStopEventMessage" value="ClrInstanceID=%1;%nPendingMethodCount=%2;%nJittedMethodCount=%3" />
+                <string id="RuntimePublisher.AllocateHandleArrayEventMessage" value="AllocateHandleArray" />
               
                 <string id="RundownPublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
                 <string id="RundownPublisher.MethodDCStart_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />
@@ -6788,6 +6816,7 @@
                 <string id="RuntimePublisher.DebugExceptionProcessingTaskMessage" value="DebugExceptionProcessing" />
                 <string id="RuntimePublisher.CodeSymbolsTaskMessage" value="CodeSymbols" />
                 <string id="RuntimePublisher.TieredCompilationTaskMessage" value="TieredCompilation" />
+                <string id="RuntimePublisher.AllocateHandleArrayTaskMessage" value="AllocateHandleArray" />
               
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
                 <string id="RundownPublisher.MethodTaskMessage" value="Method" />
@@ -7088,6 +7117,7 @@
                 <string id="RuntimePublisher.EventSourceKeywordMessage" value="EventSource" />
                 <string id="RuntimePublisher.CompilationKeywordMessage" value="Compilation" />
                 <string id="RuntimePublisher.CompilationDiagnosticKeywordMessage" value="CompilationDiagnostic" />
+                <string id="RuntimePublisher.AllocateHandleArrayKeywordMessage" value="AllocateHandleArray" />
               
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />
                 <string id="RundownPublisher.JitKeywordMessage" value="Jit" />
@@ -7215,6 +7245,7 @@
                 <string id="RuntimePublisher.TieredCompilationSettingsOpcodeMessage" value="Settings" />
                 <string id="RuntimePublisher.TieredCompilationPauseOpcodeMessage" value="Pause" />
                 <string id="RuntimePublisher.TieredCompilationResumeOpcodeMessage" value="Resume" />
+                <string id="RuntimePublisher.AllocateHandleArrayOpcodeMessage" value="AllocateHandleArray" />
 
                 <string id="RundownPublisher.MethodDCStartOpcodeMessage" value="DCStart" />
                 <string id="RundownPublisher.MethodDCEndOpcodeMessage" value="DCStop" />
